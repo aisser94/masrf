@@ -231,15 +231,15 @@ function sync(tm){
 }
 async function runSync(){
   if(!S.token)return;
-  var tm=syncTarget;syncTarget=null;setLoading(true);
+  var tm=syncTarget;syncTarget=null;var silent=S.silentOnce;S.silentOnce=false;if(!silent)setLoading(true);
   try{
     var m=tm||S.month,d=await drain(m);
     if(!d)d=await api('state',{},null,m);
     accept(d,tm);
   }catch(e){
     if(e.code==='AUTH'){toast(e.message);logout();return}
-    if(e.net)showCached(tm);else{toast(e.message);S.want=S.month}
-  }finally{setLoading(false)}
+    if(e.net)showCached(tm);else{if(!silent)toast(e.message);S.want=S.month}
+  }finally{if(!silent)setLoading(false)}
   softRender();
 }
 function softRender(){
@@ -442,7 +442,11 @@ if(S.token){
   render();sync();
 }else{clearAll();render()}
 window.addEventListener('online',function(){if(S.token)sync()});
-document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.token&&(S.offline||Q.length)&&!syncP)sync()});
+/* تحديث تلقائي كل 30 ثانية والتطبيق ظاهر. صامت: بدون شريط تحميل وبدون رسائل خطأ */
+var AUTO_MS=30000;
+function autoSync(){if(document.hidden||!S.token||syncP||S.busy||!S.st)return;S.silentOnce=true;sync()}
+setInterval(autoSync,AUTO_MS);
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.token&&S.st&&!syncP){S.silentOnce=true;sync()}});
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
 </script>
 </body>
