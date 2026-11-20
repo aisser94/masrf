@@ -1,5 +1,5 @@
 // يخزّن ملفات التطبيق ليفتح بدون إنترنت. طلبات الخادم (Apps Script) لا تمر من هنا أبداً.
-var CACHE = 'masarif-v1';
+var CACHE = 'masarif-v2';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
