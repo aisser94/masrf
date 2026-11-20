@@ -1,5 +1,5 @@
 // يخزّن ملفات التطبيق ليفتح بدون إنترنت. طلبات الخادم (Apps Script) لا تمر من هنا أبداً.
-var CACHE = 'masarif-v2';
+var CACHE = 'masarif-v3';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
@@ -21,7 +21,7 @@ self.addEventListener('fetch', function (e) {
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(req, { ignoreSearch: true }).then(function (cached) {
-        var net = fetch(req).then(function (res) {
+        var net = fetch(req, { cache: 'no-cache' }).then(function (res) {
           if (res && res.ok) cache.put(req, res.clone());
           return res;
         }).catch(function () { return cached || (req.mode === 'navigate' ? cache.match('index.html') : undefined); });

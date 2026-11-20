@@ -74,6 +74,7 @@ button,input{font:inherit;color:inherit}button{border:0;background:none;cursor:p
 .cd{display:flex;align-items:center;gap:10px;background:var(--fld);border-radius:14px;padding:6px 6px 6px 12px;margin-top:12px}.cd .t{flex:1;display:flex;gap:8px;align-items:center;font-size:13px;color:var(--mut);cursor:pointer}.cd code{font-family:ui-monospace,Menlo,monospace;font-size:16px;font-weight:700;letter-spacing:2px;color:var(--ink)}
 .th{display:flex;gap:10px;margin-top:12px}.th button{flex:1;min-height:52px;border-radius:16px;border:1px solid var(--line);background:var(--card);font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:all .2s}
 .th button.on{background:var(--mint);border-color:var(--acc);color:var(--acc);font-weight:600}
+.upb{position:fixed;left:12px;right:12px;bottom:calc(12px + env(safe-area-inset-bottom));z-index:99;background:var(--pri);color:#fff;border-radius:18px;padding:12px 14px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px rgba(0,0,0,.3)}.upb span{flex:1;font-weight:700}.upb button{background:#fff;color:var(--pri);border:0;border-radius:12px;padding:10px 16px;font:inherit;font-weight:800}
 .dev{display:flex;align-items:center;gap:12px;color:inherit;text-decoration:none}.dev .c{width:48px;height:48px;border-radius:50%;background:var(--pri);color:#fff;display:flex;align-items:center;justify-content:center}.dev small{display:block;font-size:13px;color:var(--mut)}.dev b{font-size:18px}.dev span{font-size:12px;font-weight:700;color:var(--acc)}
 .lo{text-align:center;color:var(--red);padding:12px;font-weight:500;width:100%}
 .mod{position:fixed;inset:0;background:#000a;z-index:20;display:flex;align-items:center;justify-content:center;padding:22px;animation:fi .18s}@keyframes fi{from{opacity:0}}
@@ -341,7 +342,7 @@ function render(){
   var b=document.querySelector('.bar b');if(b){var w=b.dataset.w;if(an){b.style.width='0';requestAnimationFrame(function(){requestAnimationFrame(function(){b.style.width=w+'%'})})}else{b.style.transition='none';b.style.width=w+'%'}}
 }
 
-var APP_VER='1.2';
+var APP_VER='1.3';
 function dstr(n){var d=new Date();d.setDate(d.getDate()+n);d.setMinutes(d.getMinutes()-d.getTimezoneOffset());return d.toISOString().slice(0,10)}
 function dayLbl(d){return d===today()?'اليوم · '+d:d===dstr(-1)?'أمس · '+d:d}
 function addDays(s,n){var m=/^(\d{4})-(\d\d)-(\d\d)/.exec(s||'');if(!m)return s;return new Date(Date.UTC(+m[1],+m[2]-1,+m[3]+n)).toISOString().slice(0,10)}
@@ -586,6 +587,7 @@ function vSet(st){
       '<div class="acts" style="margin-top:8px"><button class="btn soft s" style="flex:1" onclick="sendC(\''+esc(e.code)+'\')">إرسال الكود</button><button class="btn out s" style="flex:1" onclick="empDlg(\''+e.id+'\')">✎ تعديل</button></div></div>')});
     if(st.config)h+=A(i++,'<div class="panel"><div class="sec" style="margin-bottom:10px">دورة الدوام</div><div class="lb">تاريخ يوم عمل الوجبة 1 (مرجع الحساب)</div><div class="dr"><input id="an" type="date" class="inp" value="'+esc(st.config.anchorDate)+'"><button class="btn soft s" onclick="act(\'setConfig\',{anchorDate:$(\'an\').value},\'تم الحفظ\')">حفظ</button></div></div>')}
   h+=A(i++,'<div class="panel"><div class="sec">المظهر</div><div class="th">'+[['فاتح','sun'],['داكن','moon'],['تلقائي','auto']].map(function(x,k){return'<button class="'+(S.mode===k?'on':'')+'" onclick="setTheme('+k+')">'+I(x[1],18)+x[0]+'</button>'}).join('')+'</div></div>');
+  h+=A(i++,'<button class="btn soft f" onclick="updApp()">🔄 تحديث التطبيق</button>');
   h+=A(i++,'<a class="panel dev" href="https://wa.me/9647814978377" target="_blank" rel="noopener"><div class="c">'+I('code',22)+'</div><div class="g" style="flex:1"><small>المطور</small><b>ايسر ماجد</b><small style="font-size:12px">إصدار البرنامج '+APP_VER+'</small></div><span>واتساب 💬</span></a>');
   h+=A(i++,'<button class="lo" onclick="doLogout()">تسجيل خروج</button>');
   return h;
@@ -627,6 +629,29 @@ function autoSync(){if(document.hidden||!S.token||syncP||S.busy||!S.st)return;S.
 setInterval(autoSync,AUTO_MS);
 document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.token&&S.st&&!syncP){S.silentOnce=true;sync()}});
 if('serviceWorker' in navigator)window.addEventListener('load',function(){navigator.serviceWorker.register('sw.js').catch(function(){})});
+
+/* تحديث التطبيق: يمسح كاش الملفات (لا يمس الحساب ولا العمليات المحفوظة) ثم يعيد التحميل من الخادم */
+function updApp(){
+  toast('جاري التحديث…');
+  var done=function(){location.reload()};
+  var cl=window.caches?caches.keys().then(function(k){return Promise.all(k.map(function(x){return caches.delete(x)}))}):Promise.resolve();
+  var un=navigator.serviceWorker?navigator.serviceWorker.getRegistrations().then(function(r){return Promise.all(r.map(function(x){return x.unregister()}))}):Promise.resolve();
+  Promise.all([cl,un]).then(done,done);setTimeout(done,4000);
+}
+/* يتحقق إذا فيه نسخة أحدث على الخادم ويظهر شريط «تحديث» */
+function chkUpd(){
+  if(navigator.onLine===false||document.getElementById('upb'))return;
+  fetch('index.html?_='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok?r.text():''}).then(function(t){
+    var m=/var APP_VER='([^']+)'/.exec(t);
+    if(m&&m[1]!==APP_VER&&!document.getElementById('upb')){
+      var d=document.createElement('div');d.id='upb';d.className='upb';
+      d.innerHTML='<span>🔄 يوجد إصدار جديد ('+m[1]+')</span><button onclick="updApp()">حدّث التطبيق</button>';
+      document.body.appendChild(d);
+    }
+  }).catch(function(){});
+}
+window.addEventListener('load',function(){setTimeout(chkUpd,2500)});
+document.addEventListener('visibilitychange',function(){if(!document.hidden)setTimeout(chkUpd,1500)});
 </script>
 </body>
 </html>
