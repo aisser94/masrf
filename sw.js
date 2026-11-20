@@ -1,9 +1,9 @@
 // يخزّن ملفات التطبيق ليفتح بدون إنترنت. طلبات الخادم (Apps Script) لا تمر من هنا أبداً.
-var CACHE = 'masarif-v3';
+var CACHE = 'masarif-v4';
 var SHELL = ['./', 'index.html', 'manifest.webmanifest', 'icon-192.png', 'icon-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL); }).then(function () { return self.skipWaiting(); }));
+  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(SHELL.map(function (u) { return new Request(u, { cache: 'reload' }); })); }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener('activate', function (e) {
@@ -18,6 +18,7 @@ self.addEventListener('activate', function (e) {
 self.addEventListener('fetch', function (e) {
   var req = e.request, url = new URL(req.url);
   if (req.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (url.searchParams.has('_')) return; // فحص الإصدار: دائماً من الخادم مباشرة
   e.respondWith(
     caches.open(CACHE).then(function (cache) {
       return cache.match(req, { ignoreSearch: true }).then(function (cached) {
